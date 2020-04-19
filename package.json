@@ -5,5 +5,6 @@
   },
   "devDependencies": {
     "@jspm/core": "^1.1.0"
-  }
+  },
+  "type": "module"
 }
