@@ -1,7 +1,12 @@
 import { newGitRepo } from "./git-db.js";
 import { modes, toType } from "./git-codec.js";
 async function main() {
-    const git = await newGitRepo("http://crossorigin.me/https://soniex2.autistic.space/git-repos/abdl.git");
+    const match = document.location.hash.match(/[^#]+/);
+    if (!match)
+        throw new Error("Please add git repo to url after #");
+    const [url] = match;
+    const git = await newGitRepo(url);
+    console.log("Mounting git repo", url);
     for await (const { hash, commit: { message, committer: { name, email, date } } } of commitLog(git, "HEAD")) {
         console.log(`Commit: ${hash}\n`
             + `Committer: ${name} <${email}> ${new Date(date.seconds * 1000)}\n`
