@@ -15,6 +15,7 @@ export async function newGitRepo(url) {
         loadBlob,
         load,
         get,
+        getHead,
         update
     };
     function updateHead() {
@@ -33,6 +34,13 @@ export async function newGitRepo(url) {
             updatingHead = undefined;
         })();
     }
+    async function getHead() {
+        const head = await refs.get("HEAD");
+        if (head)
+            return head;
+        await updateHead();
+        return getHead();
+    }
     function updateInfo() {
         if (updatingInfo)
             return updatingInfo;
@@ -50,16 +58,10 @@ export async function newGitRepo(url) {
         })();
     }
     async function resolve(ref) {
-        if (ref === "HEAD") {
-            const head = await refs.get("HEAD");
-            if (head)
-                return resolve(head);
-            await updateHead();
-            const head2 = await refs.get("HEAD");
-            if (head2)
-                return resolve(head2);
-            throw new Error("Failed to resolve HEAD");
-        }
+        if (isHash.test(ref))
+            return ref;
+        if (ref === "HEAD")
+            return resolve(await getHead());
         const cached = await refs.get(ref);
         if (cached)
             return cached;
@@ -67,7 +69,7 @@ export async function newGitRepo(url) {
         const cached2 = await refs.get(ref);
         if (cached2)
             return cached2;
-        throw new Error("TODO: Implement git.resolve...");
+        throw new Error(`No such ref ${JSON.stringify(ref)}`);
     }
     async function get(hash) {
         if (!isHash.test(hash))

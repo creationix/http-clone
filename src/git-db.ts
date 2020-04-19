@@ -11,6 +11,7 @@ export interface IGit {
     loadBlob: (hash: string) => Promise<GitBlob>,
     load: (hash: string) => Promise<TaggedObject>,
     get: (hash: string) => Promise<ArrayBuffer>,
+    getHead: () => Promise<string>,
     update: () => Promise<void>,
 };
 
@@ -32,6 +33,7 @@ export async function newGitRepo(url: string): Promise<IGit> {
         loadBlob,
         load,
         get,
+        getHead,
         update
     };
 
@@ -47,6 +49,13 @@ export async function newGitRepo(url: string): Promise<IGit> {
             await refs.set("HEAD", head);
             updatingHead = undefined;
         })();
+    }
+
+    async function getHead(): Promise<string> {
+        const head = await refs.get("HEAD");
+        if (head) return head;
+        await updateHead();
+        return getHead();
     }
 
     function updateInfo(): Promise<void> {
@@ -67,20 +76,14 @@ export async function newGitRepo(url: string): Promise<IGit> {
     }
 
     async function resolve(ref: string): Promise<string> {
-        if (ref === "HEAD") {
-            const head = await refs.get("HEAD");
-            if (head) return resolve(head);
-            await updateHead();
-            const head2 = await refs.get("HEAD");
-            if (head2) return resolve(head2);
-            throw new Error("Failed to resolve HEAD");
-        }
+        if (isHash.test(ref)) return ref;
+        if (ref === "HEAD") return resolve(await getHead());
         const cached = await refs.get(ref);
         if (cached) return cached;
         await updateInfo();
         const cached2 = await refs.get(ref);
         if (cached2) return cached2;
-        throw new Error("TODO: Implement git.resolve...")
+        throw new Error(`No such ref ${JSON.stringify(ref)}`);
     }
 
     async function get(hash: string): Promise<ArrayBuffer> {
