@@ -1,10 +1,14 @@
-import { TaggedObject, deframe } from "./git-codec.js";
+import { TaggedObject, deframe, GitCommit, GitTag, GitTree, GitBlob } from "./git-codec.js";
 import pako from "./jspm_packages/npm/pako@1.0.11/index.js";
 
 const isHash = /^[0-9a-f]{40}$/;
 
 export interface IGit {
     resolve: (ref: string) => Promise<string>,
+    loadTag: (hash: string) => Promise<GitTag>,
+    loadCommit: (hash: string) => Promise<GitCommit>,
+    loadTree: (hash: string) => Promise<GitTree>,
+    loadBlob: (hash: string) => Promise<GitBlob>,
     load: (hash: string) => Promise<TaggedObject>,
     get: (hash: string) => Promise<ArrayBuffer>,
     update: () => Promise<void>,
@@ -20,7 +24,16 @@ export async function newGitRepo(url: string): Promise<IGit> {
     let updatingHead: Promise<void> | undefined;
     let updatingInfo: Promise<void> | undefined;
 
-    return { resolve, load, get, update };
+    return {
+        resolve,
+        loadTag,
+        loadCommit,
+        loadTree,
+        loadBlob,
+        load,
+        get,
+        update
+    };
 
     function updateHead(): Promise<void> {
         if (updatingHead) return updatingHead;
@@ -86,11 +99,35 @@ export async function newGitRepo(url: string): Promise<IGit> {
         return deframe(pako.inflate(body), true);
     }
 
-    function update(): Promise<void> {
-        return Promise.all([
+    async function loadTag(hash: string): Promise<GitTag> {
+        const obj = await load(hash);
+        if (obj.type !== "tag") throw new Error(`Expected tag, but found ${obj.type}`);
+        return obj.body;
+    }
+
+    async function loadCommit(hash: string): Promise<GitCommit> {
+        const obj = await load(hash);
+        if (obj.type !== "commit") throw new Error(`Expected commit, but found ${obj.type}`);
+        return obj.body;
+    }
+
+    async function loadTree(hash: string): Promise<GitTree> {
+        const obj = await load(hash);
+        if (obj.type !== "tree") throw new Error(`Expected tree, but found ${obj.type}`);
+        return obj.body;
+    }
+
+    async function loadBlob(hash: string): Promise<GitBlob> {
+        const obj = await load(hash);
+        if (obj.type !== "blob") throw new Error(`Expected blob, but found ${obj.type}`);
+        return obj.body;
+    }
+
+    async function update(): Promise<void> {
+        await Promise.all([
             updateHead(),
             updateInfo(),
-        ]).then(() => { return; });
+        ]);
     }
 }
 

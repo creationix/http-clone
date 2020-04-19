@@ -1,6 +1,5 @@
-import { IGit, newGitRepo } from "./git-db.js";
+import { newGitRepo } from "./git-db.js";
 import { modes, toType } from "./git-codec.js";
-
 async function main() {
     const git = await newGitRepo("http://crossorigin.me/https://soniex2.autistic.space/git-repos/abdl.git");
     for await (const { hash, commit: { message, committer: { name, email, date } } } of commitLog(git, "HEAD")) {
@@ -13,15 +12,15 @@ async function main() {
     }
 }
 main();
-
-async function* walkTree(git: IGit, ref: string) {
+async function* walkTree(git, ref) {
     const commit = await git.loadCommit(ref);
-    const queue: { path: string, mode: number, hash: string }[] = [
+    const queue = [
         { path: "/", mode: modes.tree, hash: commit.tree }
     ];
     while (true) {
         const entry = queue.shift();
-        if (!entry) break;
+        if (!entry)
+            break;
         yield entry;
         if (entry.mode === modes.tree) {
             const tree = await git.loadTree(entry.hash);
@@ -31,15 +30,15 @@ async function* walkTree(git: IGit, ref: string) {
         }
     }
 }
-
-// Async Generator for printing log of commits.
-async function* commitLog(git: IGit, ref: string) {
-    const commits: string[] = [await git.resolve(ref)];
+async function* commitLog(git, ref) {
+    const commits = [await git.resolve(ref)];
     while (true) {
         const hash = commits.shift();
-        if (!hash) break;
+        if (!hash)
+            break;
         const commit = await git.loadCommit(hash);
         yield { hash, commit };
-        commits.push.apply(commits, commit.parents as string[]);
+        commits.push.apply(commits, commit.parents);
     }
 }
+//# sourceMappingURL=main.js.map

@@ -33,7 +33,7 @@ const masks = {
     file: 0o160000,
 };
 
-const modes = {
+export const modes = {
     tree: 0o040000,
     blob: 0o100644,
     file: 0o100644,
@@ -88,32 +88,42 @@ export function decodeTree(body: Uint8Array): GitTree {
     return tree;
 }
 
+function readHeader(body: Uint8Array, i: number, expectedKey: string): [number, string] {
+    if (body[i] === 0x0a) throw new Error("Missing header");
+    let start = i;
+    i = indexOf(body, 0x20, start);
+    if (i < 0) throw new SyntaxError("Missing space");
+    const key = toRaw(body, start, i++);
+    if (key !== expectedKey) throw new Error(`Expected ${expectedKey}, but found ${key}`);
+    start = i;
+    i = indexOf(body, 0x0a, start);
+    if (i < 0) throw new SyntaxError("Missing linefeed");
+    const value: string = toString(body, start, i++);
+    return [i, value];
+}
+
 export function decodeCommit(body: Uint8Array): GitCommit {
     let i = 0;
-    let start: number;
-    let key: string;
-    const parents: string[] = [];
     let tree: string;
-    let author: GitPerson;
-    let committer: GitPerson;
-    let message: string;
-    while (body[i] !== 0x0a) {
-        start = i;
-        i = indexOf(body, 0x20, start);
-        if (i < 0) throw new SyntaxError("Missing space");
-        key = toRaw(body, start, i++);
-        start = i;
-        i = indexOf(body, 0x0a, start);
-        if (i < 0) throw new SyntaxError("Missing linefeed");
-        const value: string = toString(body, start, i++);
-        if (key === "parent") parents.push(value);
-        else if (key === "tree") tree = value;
-        else if (key === "author") author = decodePerson(value);
-        else if (key === "committer") committer = decodePerson(value);
+    [i, tree] = readHeader(body, i, "tree");
+    const parents: string[] = [];
+    while (body[i] === 0x70) {
+        let parent: string;
+        [i, parent] = readHeader(body, i, "parent");
+        parents.push(parent);
     }
-    i++;
-    message = toString(body, i, body.length);
-    return { tree, parents, author, committer, message };
+    let author: string;
+    [i, author] = readHeader(body, i, "author");
+    let committer: string;
+    [i, committer] = readHeader(body, i, "committer");
+    const message = toString(body, i + 1, body.length);
+    return {
+        tree,
+        parents,
+        author: decodePerson(author),
+        committer: decodePerson(committer),
+        message
+    };
 }
 
 export function decodeTag(body: Uint8Array): GitTag {
