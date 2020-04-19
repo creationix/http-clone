@@ -1,0 +1,14 @@
+{
+  "resolve": {
+    "@jspm/core": "npm:@jspm/core@1.1.0",
+    "pako": "npm:pako@1.0.11"
+  },
+  "dependencies": {
+    "npm:@jspm/core@1.1.0": {
+      "source": "https://registry.npmjs.org/@jspm/core/-/core-1.1.0.tgz#sha512-fNKmBlmTyyTXR3o2XhBkG7QDagsINYf3XaCrr1H6VirF7NcK8WafdWnnmsvTU6WvWl758tcSfWcQH54OEi5ZdQ=="
+    },
+    "npm:pako@1.0.11": {
+      "source": "https://registry.npmjs.org/pako/-/pako-1.0.11.tgz#sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw=="
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "app",
+  "dependencies": {
+    "pako": "^1.0.11"
+  },
+  "devDependencies": {
+    "@jspm/core": "^1.1.0"
+  }
+}
